@@ -141,6 +141,7 @@ def main() -> int:
     
     if not _is_bepinex_installed():
         print(f"{BEPINEX_PACKAGE_NAME} is not installed.")
+        return 1
 
     mods = _read_mods()
 
