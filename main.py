@@ -96,14 +96,17 @@ def _get_out_file_path(file_to_copy: str) -> str:
         _sub_dir = file_to_copy[:file_to_copy.index(os.sep)]
     except ValueError:
         file_to_copy = os.path.join("plugins", file_to_copy)
-
+    else:
+        if _sub_dir not in ("plugins", "patchers", "config"):
+            file_to_copy = os.path.join("plugins", file_to_copy)
     return os.path.join(LEGAL_COMPANY_BEPINEX_DIR, file_to_copy)
 
 
 def _install(mod: Mod) -> None:
     if not mod.depends_on_bepinex:
         print(f"Unable to install {mod.out_path} because it doesn't depend on BepInEx")
-
+        return
+    
     all = tuple(
         f
         for f in glob.glob("**", root_dir=mod.out_path, recursive=True)
@@ -111,16 +114,21 @@ def _install(mod: Mod) -> None:
         and not os.path.isdir(os.path.join(mod.out_path, f))
     )
 
+    installed = False
     for file_to_copy in all:
         out_file = _get_out_file_path(file_to_copy)
+        if os.path.exists(out_file):
+            continue
         os.makedirs(os.path.dirname(out_file), exist_ok=True)
         shutil.copy(os.path.join(mod.out_path, file_to_copy), out_file)
-        print(f"Installed {mod.by} / {mod.name}")
+        installed = True
+    
+    action = "Installed" if installed else "Already Installed (Skipped)"
+    print(f"{action} {mod.by} / {mod.name}")
 
 def _download_and_install(session: Session, mod: Mod) -> int:
     ret = _download(session, mod)
     # BepInEx Should be installed first/manually
-    # if ret > 0 and not mod.is_bepinex:
     if not mod.is_bepinex:
         _install(mod)
     return ret
