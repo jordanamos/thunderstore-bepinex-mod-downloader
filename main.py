@@ -115,7 +115,7 @@ def _install(mod: Mod) -> None:
         out_file = _get_out_file_path(file_to_copy)
         os.makedirs(os.path.dirname(out_file), exist_ok=True)
         shutil.copy(os.path.join(mod.out_path, file_to_copy), out_file)
-        print(f"Copied {file_to_copy} to {out_file}")
+        print(f"Installed {mod.by} / {mod.name}")
 
 def _download_and_install(session: Session, mod: Mod) -> int:
     ret = _download(session, mod)
