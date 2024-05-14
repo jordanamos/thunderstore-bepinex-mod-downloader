@@ -1,6 +1,6 @@
-# Legal Company Mod Downloader and Installer
+# Lethal Company Mod Downloader and Installer
 
-Download a list of mods from thunderstore.io and install them to Legal Company
+Download a list of mods from thunderstore.io and install them to Lethal Company
 
 ## Requirements
 - BepInEx [https://thunderstore.io/package/bbepis/BepInExPack/] installed
