@@ -152,6 +152,7 @@ def main() -> int:
         _func = functools.partial(_download_and_install, session)
         results = ex.map(_func, mods)
         print(f"Downloaded and Installed {sum(results)} / {len(mods)} mods.")
+        return 0
 
 
 if __name__ == "__main__":
