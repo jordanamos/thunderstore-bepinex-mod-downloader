@@ -10,8 +10,7 @@ from requests import Session
 from typing import NamedTuple
 from zipfile import ZipFile
 
-# GAME_DIR = "/Users/jamos/Library/Containers/com.isaacmarovitz.Whisky/Bottles/8360D9E1-9B3A-4951-A7D2-099CFE706B90/drive_c/Program Files (x86)/Steam/steamapps/common/Lethal Company/"
-GAME_DIR = "game"
+GAME_DIR = "/Users/jamos/Library/Containers/com.isaacmarovitz.Whisky/Bottles/8360D9E1-9B3A-4951-A7D2-099CFE706B90/drive_c/Program Files (x86)/Steam/steamapps/common/Lethal Company/"
 MODS_LIST_FILE_NAME = "mods.txt"
 OUT_DIR = os.path.abspath("mods")
 
