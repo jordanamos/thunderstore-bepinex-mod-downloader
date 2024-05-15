@@ -66,7 +66,6 @@ class Mod(NamedTuple):
                     return True
         with open(self.manifest_file, encoding="utf-8-sig") as f:
             data = json.load(f)
-
         return any(BEPINEX in dep for dep in data["dependencies"])
 
 
@@ -120,7 +119,6 @@ def _get_file_install_path(file: str, is_bepinex: bool) -> str:
             BEPINEX_CONFIG_DIR,
         ):
             file = os.path.join(BEPINEX_PLUGINS_DIR, file)
-
     return os.path.join(GAME_BEPINEX_DIR, file)
 
 
@@ -180,14 +178,11 @@ def main() -> int:
         with concurrent.futures.ThreadPoolExecutor() as ex:
             _func = functools.partial(_download_and_install_mod, session)
             results = ex.map(_func, mods)
-        downloaded = 0
-        installed = 0
-        for result in results:
-            downloaded += result[0]
-            installed += result[1]
-        tot = len(mods)
-        print(f"Downloaded {downloaded}/{tot}. Installed {installed}/{tot}.")
-        return 0
+
+    downloaded, installed = map(sum, zip(*results))
+    tot = len(mods)
+    print(f"Downloaded {downloaded}/{tot}. Installed {installed}/{tot}.")
+    return 0
 
 
 if __name__ == "__main__":
