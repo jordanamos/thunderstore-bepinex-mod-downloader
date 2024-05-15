@@ -49,5 +49,4 @@ Dev1A3-ButlerAdditionalPlayerFix-1.0.2
 Nilaier-EnhancedIcons-1.0.3
 DrinkableWater-Brutal_Company_Minus-0.13.6
 KoderTeh-Boombox_Controller-1.2.4
-FeralCompany-FeralMinimap-0.0.10
 Yorimor-CustomStoryLogs-1.1.1
