@@ -16,7 +16,7 @@ This tool is useful if you do not have access to a mod manager (maybe you have a
     ```
 2. Create a virtual Environment (Optional but recommended)
     ```
-    virtualenv venv && ./venv/bin/activate
+    virtualenv venv && . venv/bin/activate
     ```
 3. Install depenencies
     ```
