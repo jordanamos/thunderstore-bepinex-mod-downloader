@@ -4,9 +4,6 @@ Download a list of BepInEx dependant mods from thunderstore.io and install them 
 
 This tool is useful if you do not have access to a mod manager (maybe you have a Mac and installed a game using whisky) and wish to avoid manually downloading and installing mods 1 by 1. 
 
-## Requirements
-- Manually installed BepInEx [https://thunderstore.io/package/bbepis/BepInExPack/] in the given game directory
-
 ## Usage
 
 1. Clone this repository 
