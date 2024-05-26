@@ -14,8 +14,7 @@ from typing import Sequence
 from zipfile import ZipFile
 
 from requests import Session
-
-OUT_DIR = ""
+from requests import HTTPError
 
 SEP = "-"
 TARGET_BASE_URL = "https://thunderstore.io/package/download"
@@ -31,6 +30,7 @@ class Mod(NamedTuple):
     by: str
     name: str
     version: str
+    out_dir: str = ""
 
     @property
     def package_name(self) -> str:
@@ -40,7 +40,7 @@ class Mod(NamedTuple):
     def download_path(
         self,
     ) -> str:
-        return os.path.abspath(os.path.join(OUT_DIR, self.package_name))
+        return os.path.abspath(os.path.join(self.out_dir, self.package_name))
 
     @property
     def url(self) -> str:
@@ -72,6 +72,9 @@ class Mod(NamedTuple):
             data = json.load(f)
         return any(BEPINEX in dep for dep in data["dependencies"])
 
+    def __repr__(self) -> str:
+        return f"{self.name} {self.version}"
+
 
 def _is_bepinex_installed(game_dir: str) -> bool:
     return os.path.exists(os.path.join(game_dir, BEPINEX))
@@ -81,16 +84,19 @@ def _read_mods(mods_file: str) -> tuple[set[Mod], Mod | None]:
     with open(mods_file) as f:
         lines = f.readlines()
     mods = {Mod(*mod.rstrip().split(SEP)) for mod in lines}
+    bepinex_mods = {m for m in mods if m.is_bepinex}
+
+    if len(bepinex_mods) > 1:
+        raise ValueError(
+            f"Multiple {BEPINEX_PACKAGE_NAME} entries in '{mods_file}' [{bepinex_mods}]"
+        )
+
     try:
-        bepinex_mods = {m for m in mods if m.is_bepinex}
-        if len(bepinex_mods) > 1:
-            raise ValueError(
-                f"Multiple {BEPINEX_PACKAGE_NAME} entries in '{mods_file}' [{bepinex_mods}]"
-            )
         bepinex_mod = bepinex_mods.pop()
         mods.remove(bepinex_mod)
-    except IndexError:
+    except KeyError:
         bepinex_mod = None
+
     return mods, bepinex_mod
 
 
@@ -101,7 +107,6 @@ def _download(mod: Mod, session: Session) -> int:
     response.raise_for_status()
     z = ZipFile(BytesIO(response.content))
     z.extractall(mod.download_path)
-    print(f"Downloaded {mod}")
     return 1
 
 
@@ -127,7 +132,7 @@ def _get_file_install_path(game_dir: str, file: str, is_bepinex: bool) -> str:
     return os.path.join(game_dir, BEPINEX, file)
 
 
-def _install(game_dir: str, mod: Mod) -> int:
+def _install(mod: Mod, game_dir: str) -> int:
     if not mod.depends_on_bepinex and not mod.is_bepinex:
         print(f"Unable to install {mod} as it doesn't depend on {BEPINEX}")
         return 0
@@ -147,27 +152,33 @@ def _install(game_dir: str, mod: Mod) -> int:
         downloaded_file_path = os.path.join(mod.download_path, file)
         shutil.copy(downloaded_file_path, file_install_path)
         installed = True
-    action = "Installed" if installed else "Skipped installing (already installed)"
-    print(f"{action} {mod}")
+    print(f"Installed {mod}" if installed else f"Skipping {mod} (already installed)")
     return 1 if installed else 0
 
 
 def _download_and_install_mod(
-    game_dir: str,
     mod: Mod,
+    game_dir: str,
     session: Session,
-) -> tuple[int, int]:
-    return _download(mod, session), _install(game_dir, mod)
+) -> tuple[int, int, int]:
+    try:
+        ret_dl = _download(mod, session)
+    except HTTPError as e:
+        print(f"Failed to download {mod}: {e}")
+        return 0, 0, 1
+    else:
+        return ret_dl, _install(mod, game_dir), 0
 
 
-def _download_and_install_mods(game_dir: str, mods: set[Mod], session: Session) -> None:
-    _func = functools.partial(_download_and_install_mod, game_dir, session=session)
+def _download_and_install_mods(mods: set[Mod], game_dir: str, session: Session) -> None:
+    _func = functools.partial(
+        _download_and_install_mod, game_dir=game_dir, session=session
+    )
     with concurrent.futures.ThreadPoolExecutor() as ex:
         results = ex.map(_func, mods)
-
-    downloaded, installed = map(sum, zip(*results))
+    downloaded, installed, errs = map(sum, zip(*results))
     tot = len(mods)
-    print(f"Downloaded {downloaded}/{tot}. Installed {installed}/{tot}.")
+    print(f"Downloaded {downloaded}/{tot}. Installed {installed}/{tot}. Errors: {errs}")
 
 
 def main(argv: Sequence | None = None) -> int:
@@ -193,33 +204,33 @@ def main(argv: Sequence | None = None) -> int:
     if not os.path.isdir(args.game_dir):
         print(f"Game directory '{args.game_dir}' does not exist.")
         return 1
-
     if args.out_dir and not os.path.isdir(args.out_dir):
         print(f"Out directory '{args.out_dir}' does not exist.")
         return 1
 
-    global OUT_DIR
-    OUT_DIR = args.out_dir
-
     mods, bepinex_mod = _read_mods(args.mods_file)
 
-    with Session() as session, contextlib.ExitStack() as stack:
-        if OUT_DIR is None:
-            OUT_DIR = stack.enter_context(tempfile.TemporaryDirectory())
-
+    with (
+        Session() as sess,
+        contextlib.ExitStack() as ctx,
+    ):
+        Mod.out_dir = args.out_dir or ctx.enter_context(tempfile.TemporaryDirectory())
         if not _is_bepinex_installed(args.game_dir):
             if bepinex_mod is not None:
                 # Install BepInEx first
-                _download_and_install_mod(args.game_dir, bepinex_mod, session)
+                _, _, err = _download_and_install_mod(bepinex_mod, args.game_dir, sess)
+                if err == 1:
+                    # Failed to download/install. return Error
+                    return 1
             else:
                 print(f"{BEPINEX_PACKAGE_NAME} is not installed.")
                 print(f"Add it to '{args.mods_file}' or install it manually.")
                 print("See https://thunderstore.io/package/bbepis/BepInExPack")
                 return 1
         elif bepinex_mod is not None:
-            print(f"{BEPINEX} is already installed. Skipping {bepinex_mod}...")
+            print(f"Skipping {bepinex_mod} (already installed)")
 
-        _download_and_install_mods(args.game_dir, mods, session)
+        _download_and_install_mods(mods, args.game_dir, sess)
 
     return 0
 
