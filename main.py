@@ -22,7 +22,6 @@ TARGET_BASE_URL = "https://thunderstore.io/package/download"
 MOD_DIR_IGNORE = ("readme.md", "icon.png", "manifest.json", "changelog.md", "license")
 BEPINEX_PACKAGE_NAME = "BepInExPack"
 BEPINEX = "BepInEx"
-# GAME_BEPINEX_DIR = os.path.join(GAME_DIR, BEPINEX)
 BEPINEX_PLUGINS_DIR = "plugins"
 BEPINEX_PATCHERS_DIR = "patchers"
 BEPINEX_CONFIG_DIR = "config"
