@@ -23,9 +23,12 @@ This tool is useful if you do not have access to a mod manager (maybe you have a
     pip install -r requirements.txt
     ```
 4. Populate `mods.txt` with the desired mods in the format {by}-{name}-{version} (one perline!)
-5. Update the GAME_DIR, MODS_LIST_FILE_NAME, OUT_DIR, AND BEPINEX_PACKAGE_NAME in `main.py` as necessary, mainly GAME_DIR, which should be the home directory of the game you wish to install mods (where BepInEx is installed).
 
-6. Run the program
+5. Run the program
+    With the path to the game directory that you wish to install the mods for as a posiotional argument:
+
     ```
-    python main.py
+    python main.py [game_dir]
     ```
+
+6. Use -h for a list of optional arguments.
